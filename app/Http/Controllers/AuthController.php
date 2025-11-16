@@ -3,69 +3,36 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // REGISTER: name, phone, email, password
+    //
+
     public function register(Request $request)
     {
-        $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'phone'    => 'required|string|max:20',
-            'email'    => 'required|email|unique:customers,email',
-            'password' => 'required|string|min:6',
+
+        $fields = $request->validate([
+            'name' => 'required|max:255',
+            'email'=> 'required|email|unique:customers,email',
+            'password' => 'required|confirmed'
         ]);
 
-        $customer = Customer::create([
-            'name'     => $data['name'],
-            'phone'    => $data['phone'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
+        $user = Customer::create($fields);
 
-        // create token for this customer
-        $token = $customer->createToken('customer_auth')->plainTextToken;
-
-        return response()->json([
-            'status'   => true,
-            'message'  => 'Registered and logged in.',
-            'customer' => $customer,
-            'token'    => $token,
-        ], 201);
+        $token = $user->createToken($request->name);
+        return [
+            'user' => $user,
+            'token' => $token->plainTextToken
+        ];
     }
-
-    // LOGIN: email + password
     public function login(Request $request)
     {
-        $data = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        $customer = Customer::where('email', $data['email'])->first();
-
-        if (! $customer || ! Hash::check($data['password'], $customer->password)) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Invalid credentials',
-            ], 422);
-        }
-
-        $token = $customer->createToken('customer_auth')->plainTextToken;
-
-        return response()->json([
-            'status'   => true,
-            'message'  => 'Logged in.',
-            'customer' => $customer,
-            'token'    => $token,
-        ]);
+        return 'login';
     }
-
-    // CURRENT CUSTOMER (for profile icon / auto-login)
-    public function me(Request $request)
+    public function logout(Request $request)
     {
-        return $request->user(); // this will be Customer from Sanctum token
+        return 'logout';
     }
 }
